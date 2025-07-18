@@ -1,0 +1,92 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@using Umbraco.Extensions
+@{
+    Layout = "master.cshtml";
+
+    // Portfolio items (children of the PortfolioHomePage node)
+    var portfolioItems = Model.Children()
+        .Where(x => x.ContentType.Alias == "portfolioPage" && x.IsVisible())
+        .OrderByDescending(x => x.CreateDate)
+        .ToList();
+
+    const int pageSize = 15;
+    var totalItems = portfolioItems.Count();
+    var numPages = (int)Math.Ceiling((double)totalItems / pageSize);
+
+    var selectedPage = 1;
+    var queryParam = Context.Request.Query["page"];
+    if (!string.IsNullOrWhiteSpace(queryParam) && int.TryParse(queryParam, out var page))
+    {
+        if (page > 0 && page <= numPages)
+        {
+            selectedPage = page;
+        }
+    }
+
+    var pagedItems = portfolioItems
+        .Skip((selectedPage - 1) * pageSize)
+        .Take(pageSize)
+        .ToList();
+
+    var nameOfPage = Model.Value<string>("nameOfPage");
+    var text = Model.Value<string>("text");
+}
+
+@await Html.PartialAsync("Header")
+
+<div class="py-10 pt-lg-16 pb-lg-12">
+    <div class="container">
+        <div class="row">
+
+            <!-- Page Title and Intro -->
+            <div class="mb-5 mt-5">
+                <h1>@nameOfPage</h1>
+                <p>@text</p>
+            </div>
+
+            <!-- Portfolio Items -->
+            @foreach (var item in pagedItems)
+            {
+                var image = item.Value<IPublishedContent>("image");
+                var image408 = image?.GetCropUrl(width: 408, height: 408, furtherOptions: "&format=jpg");
+                var image334 = image?.GetCropUrl(width: 334, height: 334, furtherOptions: "&format=jpg");
+                var altText = item.Value<string>("heroImageAltText") ?? item.Name;
+
+                <div class="col-sm-12 col-md-4 mb-5">
+                    <a href="@item.Url()">
+                        <picture>
+                            <source media="(max-width: 399px)" srcset="@image334" />
+                            <source media="(min-width: 400px)" srcset="@image408" />
+                            <img src="@image408" alt="@altText" class="img-fluid" loading="lazy" width="408" height="408" />
+                        </picture>
+                    </a>
+                    <h4 class="mb-3 fw-light">
+                        <a href="@item.Url()" class="text-dark">@item.Name</a>
+                    </h4>
+                </div>
+            }
+
+            <!-- Pagination -->
+            @if (numPages > 1)
+            {
+                <nav class="mt-5 py-5" aria-label="Page navigation">
+                    <ul class="pagination mb-0">
+                        <li class="fs-4 px-2 py-2 @(selectedPage <= 1 ? "disabled" : "")">
+                            <a class="ps-0 pe-3 text-body" href="@($"{Model.Url()}?page={selectedPage - 1}")">Previous</a>
+                        </li>
+                        @for (int i = 1; i <= numPages; i++)
+                        {
+                            <li class="fs-4 px-2 py-2 @(selectedPage == i ? "active" : "")">
+                                <a class="p-3 @(selectedPage == i ? "" : "text-body")" href="@($"{Model.Url()}?page={i}")">@i</a>
+                            </li>
+                        }
+                        <li class="fs-4 px-2 py-2 @(selectedPage >= numPages ? "disabled" : "")">
+                            <a class="p-3 text-body" href="@($"{Model.Url()}?page={selectedPage + 1}")">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>

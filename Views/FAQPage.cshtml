@@ -1,0 +1,85 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+
+@{
+    Layout = "master.cshtml";
+
+    var image = Model.Value<IPublishedContent>("image");
+    var imageUrl = image?.Url() + "?width=1600&height=400&format=jpg&mode=crop";
+
+    var nameOfPage = Model.Value<string>("nameOfPage");
+    var fAQIntroText = Model.Value<string>("fAQIntroText");
+    var faqItems = Model.Value<IEnumerable<IPublishedElement>>("fAQs");
+}
+
+@await Html.PartialAsync("Header")
+
+<!-- Hero Section -->
+@if (!string.IsNullOrWhiteSpace(imageUrl))
+{
+    <div style="background: url('@imageUrl'); background-size: cover; background-repeat: no-repeat; background-position: center;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="pt-18 pb-13 pt-lg-20 pb-lg-19 text-center text-light">
+                    <h1 class="display-3 text-white mb-3 lh-1">@nameOfPage</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Content Section -->
+<div class="py-10 pt-lg-16 pb-lg-12">
+    <div class="container">
+        <div class="row">
+            <!-- Left Label -->
+            <div class="col-sm-12 col-md-3 mt-2 mb-4">
+                <div class="float-start me-2" style="background-color: #11B5DA; width:20px; height:20px;"></div>
+                <div class="fs-6">@nameOfPage</div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="col-sm-12 col-md-7">
+                @Html.Raw(fAQIntroText)
+
+                @if (faqItems != null && faqItems.Any())
+                {
+                    <div class="accordion accordion-flush mt-5 mb-8" id="accordionFlushExample">
+                        @{
+                            var counter = 0;
+                        }
+
+                        @foreach (var item in faqItems)
+                        {
+                            if (!item.IsVisible()) continue;
+
+                            var header = item.Value<string>("fAQHeader");
+                            var text = item.Value<string>("fAQText");
+                            var id = $"flush-{++counter}";
+                            
+                            <div class="accordion-item accordion-flush">
+                                <h2 class="shadow-sm accordion-header" id="heading-@id">
+                                    <button class="ps-3 py-1 my-3 accordion-button collapsed rounded border fs-3"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapse-@id"
+                                            aria-expanded="false"
+                                            aria-controls="collapse-@id">
+                                        @header
+                                    </button>
+                                </h2>
+                                <div id="collapse-@id" class="accordion-collapse collapse"
+                                     aria-labelledby="heading-@id"
+                                     data-bs-parent="#accordionFlushExample">
+                                    <div class="accordion-body">
+                                        @Html.Raw(text)
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

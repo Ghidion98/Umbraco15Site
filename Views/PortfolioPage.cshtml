@@ -1,0 +1,131 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@using Umbraco.Extensions
+
+@{
+    Layout = "master.cshtml";
+
+    var images = Model.Value<IEnumerable<IPublishedElement>>("projectImages");
+    var headerImage = Model.Value<IPublishedContent>("image", fallback: Fallback.ToAncestors);
+    var headerImageUrl = headerImage?.GetCropUrl(1600, 800, furtherOptions: "&format=jpg");
+
+    var articleBlocks = Model.Value<IEnumerable<IPublishedElement>>("articleBody");
+
+    var portfolioItems = Umbraco.Content(Guid.Parse("0765a425-8f05-4fee-bd7a-b98d4108c175"))
+                              ?.ChildrenOfType("portfolioPage")
+                              .Where(x => x.IsVisible())
+                              .OrderBy(x => Guid.NewGuid());
+}
+
+@await Html.PartialAsync("Header")
+
+<!-- Hero -->
+<div style="background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.3)), url('@headerImageUrl'); background-size: cover; background-repeat: no-repeat; background-position: center; height: 800px;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="pt-22 pb-13 pt-lg-22 pb-lg-19 text-center text-light">
+                <h1 class="align-middle display-3 text-white mb-3 lh-1">@Model.Value("nameOfPage")</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Article + Sidebar -->
+<div class="py-10 pt-lg-16 pb-lg-6">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12 col-md-2 mt-2 mb-4">
+                <div class="float-start me-2" style="background-color: #11B5DA; width:20px; height:20px;"></div>
+                <div class="fs-6">Portfolio</div>
+            </div>
+            <div class="col-sm-12 col-md-8 ms-sm-n3 mb-5">
+                @if (articleBlocks != null)
+                {
+                    foreach (var block in articleBlocks)
+                    {
+                        if (block.ContentType.Alias == "richTextBlock")
+                        {
+                            <div class="mb-4">@Html.Raw(block.Value<string>("text"))</div>
+                        }
+                        else if (block.ContentType.Alias == "imageBlock")
+                        {
+                            var img = block.Value<IPublishedContent>("image");
+                            if (img != null)
+                            {
+                                <img src="@img.Url()" alt="@img.Name" class="img-fluid mb-4" />
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    <p>No content found.</p>
+                }
+            </div>
+            <div class="col-sm-12 col-md-2 ps-5 ms-md-0">
+                <p class="fw-light mb-3">Timeline:<br /><span class="fw-bold">@Model.Value("timeline")</span></p>
+                <p class="fw-light mb-3">Location:<br /><span class="fw-bold">@Model.Value("location")</span></p>
+                <p class="fw-light mb-3">Project:<br /><span class="fw-bold">@Model.Value("nameOfPage")</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Images -->
+@{
+    var imgs = images?.ToList() ?? new List<IPublishedElement>();
+
+    void RenderImageBlock(int index, int widthL, int heightL, int widthS, int heightS, string classes = "")
+    {
+        if (imgs.Count > index)
+        {
+            var block = imgs[index];
+            var caption = block.Value<string>("portfolioFolioImageCaption");
+            var image = block.Value<IPublishedContent>("portfolioFigure");
+            var urlL = image?.GetCropUrl(widthL, heightL, "&format=jpg");
+            var urlS = image?.GetCropUrl(widthS, heightS, "&format=jpg");
+
+            <div class="col-sm-12 @(classes)">
+                <p class="text-left mb-1 fw-light">@caption</p>
+                <picture>
+                    <source media="(max-width: 399px)" srcset="@urlS">
+                    <source media="(min-width: 400px)" srcset="@urlL">
+                    <img src="@urlL" alt="@caption" class="img-fluid border border-light" width="@widthL" height="@heightL" loading="lazy" />
+                </picture>
+            </div>
+        }
+    }
+}
+
+<div class="py-10 pb-lg-16 mt-n5"><div class="container"><div class="row">@{ RenderImageBlock(0, 518, 631, 328, 400); }</div></div></div>
+<div class="py-10 pb-lg-16 mt-n5"><div class="container"><div class="row">@{ RenderImageBlock(1, 518, 631, 328, 400, "mt-5 mt-md-18"); }</div></div></div>
+<div class="py-10 pb-lg-16 mt-n5"><div class="container-fluid"><div class="row">@{ RenderImageBlock(2, 2000, 800, 360, 200); }</div></div></div>
+<div class="py-10 pb-lg-16 mt-n5"><div class="container"><div class="row">@{ RenderImageBlock(3, 518, 631, 328, 400); RenderImageBlock(4, 518, 631, 328, 400, "mt-5 mt-md-18"); }</div></div></div>
+<div class="pt-10 mt-n5"><div class="container-fluid"><div class="row">@{ RenderImageBlock(5, 2000, 800, 360, 200); }</div></div></div>
+
+<!-- NEXT Portfolio Item -->
+<div class="py-2">
+    <div class="container-fluid">
+        <div class="row d-none d-sm-block">
+            <p class="text-light text-center fw-bold" style="font-size:260px;">Next</p>
+            @if (portfolioItems?.Any() == true)
+            {
+                var nextItem = portfolioItems.First();
+                <p class="text-center mb-16 fw-normal display-4 mt-n20">
+                    <a href="@nextItem.Url()">@nextItem.Name</a>
+                </p>
+            }
+        </div>
+
+        <div class="row d-block d-sm-none">
+            <p class="text-light text-center fw-bold" style="font-size:150px;">Next</p>
+            @if (portfolioItems?.Any() == true)
+            {
+                var nextItem = portfolioItems.First();
+                <p class="text-center mb-13 fw-normal display-4 mt-n18">
+                    <a href="@nextItem.Url()">@nextItem.Name</a>
+                </p>
+            }
+        </div>
+    </div>
+</div>

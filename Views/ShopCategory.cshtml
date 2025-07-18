@@ -1,0 +1,65 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@using Umbraco.Extensions
+
+@{
+    Layout = "master.cshtml";
+
+    var tagName = Model.Value<string>("nameOfPage");
+    var root = Umbraco.Content(Guid.Parse("4a5de1cd-c89c-476f-b85c-05904fea31b8"));
+
+    var taggedContent = root?
+        .Children()
+        .Where(x => x.IsPublished() &&
+            (x.Value<IEnumerable<string>>("categories") ?? Enumerable.Empty<string>())
+            .Any(tag => tag == tagName))
+        .OrderByDescending(x => x.Value<DateTime>("releaseDate"));
+}
+
+@await Html.PartialAsync("Header")
+
+<div class="py-10 pt-lg-16 pb-lg-12">
+    <div class="container">
+        <div class="mb-5 mt-5">
+            <h1>@tagName</h1>
+            <p>@Model.Value("text")</p>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12 col-md-2">
+                <h4>Product Categories</h4>
+                @await Html.PartialAsync("Categories")
+            </div>
+
+            <div class="col-sm-12 col-md-10">
+                <div class="row">
+                    @if (taggedContent != null)
+                    {
+                        foreach (var item in taggedContent)
+                        {
+                            var productImage = item.Value<IPublishedContent>("leadProductImage");
+                            var imageUrlLarge = productImage?.GetCropUrl(408, 408, "&format=jpg");
+                            var imageUrlSmall = productImage?.GetCropUrl(334, 334, "&format=jpg");
+                            var altText = item.Value<string>("productImageAlternativeText") ?? item.Name;
+                            var price = item.Value<decimal?>("priceTemp")?.ToString("0.00") ?? "0.00";
+
+                            <div class="col-sm-12 col-md-4 mb-5">
+                                <a href="@item.Url()">
+                                    <picture>
+                                        <source media="(max-width: 399px)" srcset="@imageUrlSmall" />
+                                        <source media="(min-width: 400px)" srcset="@imageUrlLarge" />
+                                        <img src="@imageUrlLarge" alt="@altText" class="img-fluid mb-3" width="408" height="408" loading="lazy" />
+                                    </picture>
+                                </a>
+                                <h4 class="d-inline">
+                                    <a href="@item.Url()" class="text-dark">@item.Name</a>
+                                </h4>
+                                <p class="fw-light float-end d-inline">$@price</p>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

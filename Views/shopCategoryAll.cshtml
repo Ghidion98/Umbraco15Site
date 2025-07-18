@@ -1,0 +1,72 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@using Umbraco.Extensions
+@{
+    Layout = "Master.cshtml";
+
+    var selection = Umbraco.Content(Guid.Parse("4a5de1cd-c89c-476f-b85c-05904fea31b8"))
+        ?.Children()
+        .Where(x => x.IsVisible())
+        .OrderBy(x => x.Name)
+        .ToList();
+}
+
+@await Html.PartialAsync("Header")
+
+<div class="py-10 pt-lg-16 pb-lg-12">
+    <div class="container">
+
+        <div class="mb-5 mt-5">
+            <h1>@Model.Value("nameOfPage")</h1>
+            <p>@Model.Value("text")</p>
+        </div>
+
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-sm-12 col-md-2">
+                <h4>Product Categories</h4>
+                @await Html.PartialAsync("Categories")
+            </div>
+
+            <!-- Product Grid -->
+            <div class="col-sm-12 col-md-10">
+                <div class="row">
+                    @if (selection != null && selection.Any())
+                    {
+                        foreach (var item in selection)
+                        {
+                            var productImage = item.Value<IPublishedContent>("leadProductImage");
+                            var price = item.Value<decimal?>("priceTemp")?.ToString("0.00") ?? "N/A";
+                            var imageAltText = item.Value<string>("productImageAlternativeText") ?? item.Name;
+
+                            var imageItem408x408Url = productImage?.GetCropUrl(408, 408, furtherOptions: "&format=jpg");
+                            var imageItem334x334Url = productImage?.GetCropUrl(334, 334, furtherOptions: "&format=jpg");
+
+                            <div class="col-sm-12 col-md-4 mb-4">
+                                <a href="@item.Url()">
+                                    <picture>
+                                        <source media="(max-width: 399px)" srcset="@imageItem334x334Url" />
+                                        <source media="(min-width: 400px)" srcset="@imageItem408x408Url" />
+                                        <img src="@imageItem408x408Url" alt="@imageAltText" loading="lazy" class="img-fluid mb-3" width="408" height="408" />
+                                    </picture>
+                                </a>
+
+                                <h5 class="d-inline-block">
+                                    <a href="@item.Url()" class="text-dark">@item.Name</a>
+                                </h5>
+                                <p class="fw-light float-end d-inline-block">CAD $@price</p>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12">
+                            <p>No products found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

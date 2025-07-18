@@ -1,0 +1,69 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+
+@{
+    Layout = "Master.cshtml";
+
+    var imageItem = Model.Value<IPublishedContent>("Image", fallback: Fallback.ToAncestors);
+    var imageUrl1600x400 = imageItem?.GetCropUrl(1600, 400, furtherOptions: "&format=jpg");
+
+    var portfolioImage = Model.Value<IPublishedContent>("leftSideImage");
+    var imageUrl540x658 = portfolioImage?.GetCropUrl(540, 658, furtherOptions: "&format=jpg");
+    var imageUrl343x418 = portfolioImage?.GetCropUrl(343, 418, furtherOptions: "&format=jpg");
+
+    var imageAlt = Model.Value<string>("leftSideImageAlternativeText", fallback: Fallback.ToAncestors) ?? "Portfolio Image";
+    var pageTitle = Model.Value<string>("nameOfPage");
+}
+
+@await Html.PartialAsync("Header")
+
+<div style="background: url('@imageUrl1600x400'); background-size: cover; background-repeat: no-repeat; background-position: center;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="pt-18 pb-13 pt-lg-20 pb-lg-19 text-center text-light">
+                <h1 class="display-3 text-white mb-3 lh-1">@pageTitle</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="py-10 pt-lg-16 pb-lg-12">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12 col-md-2 mt-2 mb-4">
+                <div class="float-start me-2" style="background-color: #11B5DA; width:20px; height:20px;"></div>
+                <div class="fs-6">@pageTitle</div>
+            </div>
+            <div class="col-sm-12 col-md-8">
+                <div>
+                    @Html.Raw(Model.Value("contactUsPageText"))
+                </div>
+            </div>
+            <div class="col-sm-12 col-md-2">
+                <h4>Mississauga</h4>
+                <div>
+                    <span class="d-block">Greater Toronto Area</span>
+                    <span class="d-block"><a href="tel:+14167792768">+1 416 779 2768</a></span>
+                    <span class="d-block"><a href="mailto:info@abahughes.com">info@abahughes.com</a></span>
+                </div>
+            </div>
+        </div>
+    </div> 
+</div>
+
+<div class="py-10 pt-lg-16 pb-lg-12 bg-light">
+    <div class="container px-0 px-md-10">
+        <div class="row">
+            <div class="col-sm-12 col-md-6 mt-2 mb-4 px-5">
+                <picture>
+                    <source media="(max-width: 399px)" srcset="@imageUrl343x418">
+                    <source media="(min-width: 400px)" srcset="@imageUrl540x658">
+                    <img src="@imageUrl540x658" alt="@imageAlt" class="img-fluid" loading="lazy">
+                </picture>
+            </div>
+            <div class="col-sm-12 col-md-6 px-5 pt-2">
+                @await Html.PartialAsync("AirTable Contact Us Form")
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,90 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@using Umbraco.Cms.Core.Models.Blocks
+@using Umbraco.Extensions
+
+@{
+    Layout = "master.cshtml";
+
+    var imageContent = Model.Value<IPublishedContent>("image", fallback: Fallback.ToAncestors);
+    var imageUrl = imageContent?.GetCropUrl(width: 1600, height: 400, furtherOptions: "&format=jpg") ?? "";
+
+    var pageTitle = Model.Value<string>("nameOfPage");
+    var blocks = Model.Value<BlockGridModel>("articleBody");
+}
+
+@await Html.PartialAsync("Header")
+
+<!-- Hero Section -->
+<div style="background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4)), url('@imageUrl'); background-size: cover; background-position: center;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="pt-18 pb-13 pt-lg-20 pb-lg-19 text-center text-light">
+                <h1 class="display-3 text-white mb-3 lh-1">@pageTitle</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Section -->
+<div class="py-10 pt-lg-16 pb-lg-12">
+    <div class="container">
+        <div class="row">
+            <!-- Left Label Section -->
+            <div class="col-sm-12 col-md-2 mt-2 mb-4">
+                <div class="float-start me-2" style="background-color: #11B5DA; width: 20px; height: 20px;"></div>
+                <div class="fs-6">@pageTitle</div>
+            </div>
+
+            <!-- Main Block Content -->
+            <div class="col-sm-12 col-md-8 mb-10">
+                @if (blocks != null)
+                {
+                    foreach (var block in blocks)
+                    {
+                        try
+                        {
+                            if (block?.Content == null)
+                            {
+                                <p style="color:red;">Block content is null.</p>
+                                continue;
+                            }
+
+                            var alias = block.Content.ContentType?.Alias ?? "";
+
+                            if (alias == "richtextBlock")
+                            {
+                                var text = block.Content.Value<string>("bodyText");
+                                <div class="mb-4">@Html.Raw(text)</div>
+                            }
+                            else if (alias == "imageBlock")
+                            {
+                                var media = block.Content.Value<IPublishedContent>("image");
+                                if (media != null)
+                                {
+                                    <img src="@media.Url()" alt="@media.Name" class="img-fluid mb-4" />
+                                }
+                                else
+                                {
+                                    <p style="color:red;">Image is missing.</p>
+                                }
+                            }
+                            else
+                            {
+                                <p style="color:red;">Unknown block: @alias</p>
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            <pre style="color:red;">@ex.Message</pre>
+                        }
+                    }
+                }
+                else
+                {
+                    <p>No blocks to show.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

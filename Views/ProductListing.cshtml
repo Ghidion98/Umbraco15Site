@@ -1,0 +1,113 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@using Newtonsoft.Json
+@{
+    Layout = "master.cshtml";
+
+    var productName = Model.Value<string>("productName");
+    var productPrice = Model.Value<decimal?>("price") ?? 0;
+    var productDescription = Model.Value<string>("productDescription");
+    var productShortDescription = Model.Value<string>("productShortDescription");
+    var leadImage = Model.Value<IPublishedContent>("leadProductImage");
+
+    var productImages = new List<dynamic>();
+
+    if (leadImage != null)
+    {
+        productImages.Add(new {
+            Mobile = leadImage.GetCropUrl(334, 334),
+            Tablet = leadImage.GetCropUrl(408, 408),
+            Desktop = leadImage.GetCropUrl(495, 620),
+            Alt = leadImage.Name
+        });
+    }
+
+    var galleryItems = Model.Value<IEnumerable<IPublishedElement>>("productImages");
+    if (galleryItems != null)
+    {
+        foreach (var item in galleryItems)
+        {
+            var img = item.Value<IPublishedContent>("productListingImage");
+            var alt = item.Value<string>("productListingImageAltText");
+
+            if (img != null)
+            {
+                productImages.Add(new {
+                    Mobile = img.GetCropUrl(334, 334),
+                    Tablet = img.GetCropUrl(408, 408),
+                    Desktop = img.GetCropUrl(495, 620),
+                    Alt = alt
+                });
+            }
+        }
+    }
+
+    var serializedImages = JsonConvert.SerializeObject(productImages);
+    var currentCategories = Model.Value<IEnumerable<string>>("categories") ?? Enumerable.Empty<string>();
+    var relatedItems = Umbraco.Content(Guid.Parse("4a5de1cd-c89c-476f-b85c-05904fea31b8"))
+                        ?.Children()
+                        .Where(x => x.IsVisible()
+                            && (x.Value<IEnumerable<string>>("categories") ?? Enumerable.Empty<string>())
+                                .Intersect(currentCategories).Any())
+                        .Take(3);
+}
+
+<!-- Load Alpine.js -->
+<script src="https://unpkg.com/alpinejs" defer></script>
+
+@await Html.PartialAsync("Header")
+
+<div class="container py-5">
+    <div class="row">
+        <!-- Image Preview -->
+        <div class="col-md-6" x-data="{ selected: 0, images: @Html.Raw(serializedImages) }">
+            <div>
+                <picture>
+                    <source media="(max-width: 399px)" :srcset="images[selected].Mobile">
+                    <source media="(min-width: 400px)" :srcset="images[selected].Tablet">
+                    <img :src="images[selected].Desktop" :alt="images[selected].Alt" class="img-fluid mb-3" />
+                </picture>
+            </div>
+            <div class="row">
+                <template x-for="(image, index) in images" :key="index">
+                    <div class="col-4 mb-2">
+                        <img :src="image.Mobile" :alt="image.Alt" class="img-fluid border" style="cursor:pointer;" @@click="selected = index" />
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="col-md-6">
+            <h1>@productName</h1>
+            <h4 class="text-muted">CAD $@productPrice.ToString("0.00")</h4>
+            <div class="my-3">
+                @Html.Raw(productShortDescription)
+            </div>
+            <div>
+                @Html.Raw(productDescription)
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    <div class="mt-5">
+        <h4>Related Products</h4>
+        <div class="row">
+            @if (relatedItems != null)
+            {
+                foreach (var item in relatedItems)
+                {
+                    var img = item.Value<IPublishedContent>("leadProductImage");
+                    var imgUrl = img?.GetCropUrl(334, 334);
+                    <div class="col-md-4 mb-4">
+                        <a href="@item.Url()">
+                            <img src="@imgUrl" alt="@item.Name" class="img-fluid" />
+                            <h6 class="mt-2">@item.Name</h6>
+                        </a>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
